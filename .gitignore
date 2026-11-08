@@ -1,0 +1,224 @@
+
+##################################################
+# FRONTEND - REACT / VITE / TYPESCRIPT
+##################################################
+
+# Node dependencies
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/build/
+**/.next/
+**/out/
+
+# Vite
+**/.vite/
+**/vite.svg
+
+# React / TypeScript
+**/*.tsbuildinfo
+
+# Package manager logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/pnpm-debug.log*
+**/lerna-debug.log*
+
+# Package manager caches
+**/.npm/
+**/.yarn/cache/
+**/.pnpm-store/
+
+# Environment variables
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.sample
+
+# Testing / coverage
+**/coverage/
+**/.nyc_output/
+**/playwright-report/
+**/test-results/
+**/storybook-static/
+
+# Storybook cache
+**/.storybook-cache/
+
+# Misc frontend
+**/.eslintcache
+**/.stylelintcache
+**/.parcel-cache/
+**/.turbo/
+**/.vercel/
+**/.netlify/
+
+
+##################################################
+# BACKEND - .NET / ASP.NET CORE
+##################################################
+
+# Build output
+**/bin/
+**/obj/
+
+# Visual Studio generated files
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+
+# Visual Studio cache
+**/.vs/
+**/.vscode/.ropeproject/
+
+# Rider
+**/.idea/
+**/*.sln.iml
+
+# .NET generated files
+**/*.dll
+**/*.exe
+**/*.pdb
+**/*.cache
+**/*.tmp
+
+# NuGet
+**/packages/
+**/*.nupkg
+**/*.snupkg
+
+# Test results
+**/TestResults/
+**/*.trx
+**/*.coverage
+**/*.coveragexml
+
+# ASP.NET Core logs
+**/logs/
+**/LogFiles/
+
+# Local configuration / secrets
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/secrets.json
+**/Properties/launchSettings.local.json
+
+# Entity Framework generated artifacts
+**/efbundle*
+**/Migrations/*Designer.cs.bak
+
+
+##################################################
+# DOCKER
+##################################################
+
+# Docker override files (local development)
+**/docker-compose.override.yml
+**/docker-compose.*.override.yml
+
+# Docker build context artifacts
+**/.docker/
+
+# Local Docker environment files
+**/.env.docker
+**/.env.docker.local
+
+# Docker volumes (if stored locally)
+**/docker-volumes/
+**/docker-data/
+
+
+##################################################
+# DATABASE
+##################################################
+
+# SQL Server
+**/*.mdf
+**/*.ldf
+**/*.ndf
+**/*.bak
+**/*.trn
+
+# SQLite
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# PostgreSQL
+**/pgdata/
+
+# Redis
+**/dump.rdb
+**/appendonly.aof
+
+
+##################################################
+# LOGS / TEMPORARY FILES
+##################################################
+
+**/*.log
+**/*.log.*
+**/logs/
+**/temp/
+**/tmp/
+**/*.tmp
+**/*.temp
+
+
+##################################################
+# IDE / EDITOR
+##################################################
+
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+
+##################################################
+# ENVIRONMENT / SECRETS
+##################################################
+
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+
+
+**/appsettings.Production.json
+**/appsettings.Staging.json
+
+# Certificates and private keys
+**/*.pfx
+**/*.p12
+**/*.key
+**/*.pem
+**/*.crt
+
+
+##################################################
+# OPERATING SYSTEM
+##################################################
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+
+##################################################
+# GENERATED DOCUMENTATION / REPORTS
+##################################################
+
+**/artifacts/
+**/publish/
+**/TestResults/
+**/BenchmarkDotNet.Artifacts/
