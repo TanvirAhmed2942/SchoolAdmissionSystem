@@ -1,5 +1,7 @@
 import Layout from "@/layout/Layout";
 import App from "@/pages/App";
+import MyApplications from "@/pages/MyApplications";
+import Reservation from "@/pages/Reservation";
 import { createBrowserRouter } from "react-router";
 
 const router = createBrowserRouter([
@@ -12,8 +14,12 @@ const router = createBrowserRouter([
         element: <App />,
       },
       {
+        path: "/create-reservation/:id",
+        element: <Reservation />,
+      },
+      {
         path: "/my-applications",
-        element: <div>My Applications</div>,
+        element: <MyApplications />,
       },
       {
         path: "/admin",
