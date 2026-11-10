@@ -1,4 +1,5 @@
 import Heading from "@/common/Heading";
+import ApplyClassTable from "@/components/applyclasstable/ApplyClassTable";
 
 const headingProps = {
   upper_subtitle: "Admissions open for 2025",
@@ -8,7 +9,12 @@ const headingProps = {
 };
 
 function App() {
-  return <Heading {...headingProps} />;
+  return (
+    <div>
+      <Heading {...headingProps} />
+      <ApplyClassTable />
+    </div>
+  );
 }
 
 export default App;
