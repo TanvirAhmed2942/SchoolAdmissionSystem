@@ -1,4 +1,5 @@
 import Layout from "@/layout/Layout";
+import Admin from "@/pages/Admin";
 import App from "@/pages/App";
 import MyApplications from "@/pages/MyApplications";
 import Reservation from "@/pages/Reservation";
@@ -23,7 +24,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/admin",
-        element: <div>Admin</div>,
+        element: <Admin />,
       },
     ],
   },

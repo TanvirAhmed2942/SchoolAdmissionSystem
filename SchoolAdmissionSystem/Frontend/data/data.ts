@@ -5,6 +5,7 @@ export type ClassSeat = {
   available: number;
   held: number;
   confirmed: number;
+  shift?: Shift;
 };
 
 export const classes: ClassSeat[] = [
@@ -117,3 +118,5 @@ export const applications: Application[] = [
     status: "expired",
   },
 ];
+
+export type Shift = "morning" | "day";
