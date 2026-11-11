@@ -1,3 +1,7 @@
+<<<<<<< Updated upstream
+=======
+import { useGetClassesQuery } from "@/api/AdminApi";
+>>>>>>> Stashed changes
 import Heading from "@/common/Heading";
 import ClassTableOverview from "@/components/admindashboard/ClassTableOverview";
 
@@ -8,6 +12,26 @@ function Admin() {
     subtitle: "Manage classes and review current seat availability.",
   };
 
+<<<<<<< Updated upstream
+=======
+  const {
+    data: classes,
+    isLoading,
+    isError,
+    error,
+  } = useGetClassesQuery(undefined);
+
+  console.log("Classes data:", classes);
+  if (isLoading) {
+    return <p>Loading classes...</p>;
+  }
+
+  if (isError) {
+    return <p>Failed to load classes.</p>;
+  }
+
+  console.log("Classes data after loading:", classes);
+>>>>>>> Stashed changes
   return (
     <div>
       <div className="flex flex-col fitems-center  gap-4">
