@@ -1,7 +1,4 @@
-<<<<<<< Updated upstream
-=======
 import { useGetClassesQuery } from "@/api/AdminApi";
->>>>>>> Stashed changes
 import Heading from "@/common/Heading";
 import ClassTableOverview from "@/components/admindashboard/ClassTableOverview";
 
@@ -12,8 +9,6 @@ function Admin() {
     subtitle: "Manage classes and review current seat availability.",
   };
 
-<<<<<<< Updated upstream
-=======
   const {
     data: classes,
     isLoading,
@@ -31,7 +26,6 @@ function Admin() {
   }
 
   console.log("Classes data after loading:", classes);
->>>>>>> Stashed changes
   return (
     <div>
       <div className="flex flex-col fitems-center  gap-4">
