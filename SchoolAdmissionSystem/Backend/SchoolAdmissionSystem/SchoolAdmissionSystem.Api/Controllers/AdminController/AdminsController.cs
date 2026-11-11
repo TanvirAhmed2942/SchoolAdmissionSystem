@@ -26,7 +26,7 @@ namespace SchoolAdmissionSystem.Api.Controllers.AdminController
 
         [HttpPost("classes")]
         public async Task<IActionResult> CreateClass(
-            [FromBody] CreateClassDto createClassDto)
+            [FromBody] AdminDto createClassDto)
         {
             var createdClass = await _adminService.CreateClassAsync(createClassDto);
 

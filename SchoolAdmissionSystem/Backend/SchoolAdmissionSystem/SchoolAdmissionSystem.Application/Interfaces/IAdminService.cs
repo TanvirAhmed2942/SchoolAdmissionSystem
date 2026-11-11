@@ -5,9 +5,9 @@ namespace SchoolAdmissionSystem.Application.Interfaces
 {
     public interface IAdminService
     {
-        Task<SchoolClass> CreateClassAsync(CreateClassDto createClassDto);
-        Task<List<SchoolClass>>? GetAllClassesAsync();
-        Task<SchoolClass?> GetClassByIdAsync(Guid classId);
+        Task<ClassOverviewDto> CreateClassAsync(AdminDto createClassDto);
         Task<bool> DeleteClassAsync(Guid classId);
+        Task<List<ClassOverviewDto>> GetAllClassesAsync();
+        Task<SchoolClass?> GetClassByIdAsync(Guid classId);
     }
 }
