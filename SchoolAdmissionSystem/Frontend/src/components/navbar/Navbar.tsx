@@ -10,14 +10,14 @@ function Navbar() {
           aria-label="Go to available classes"
         >
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-700 text-sm font-bold text-white">
-            SA
+            OP
           </span>
 
           <span>
             <span className="block text-sm font-semibold leading-4 text-slate-900">
               School Admission
             </span>
-            <span className="text-xs text-slate-500">2025 Academic Year</span>
+            <span className="text-xs text-slate-500">2026 Academic Year</span>
           </span>
         </Link>
 

@@ -1,7 +1,17 @@
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 
 import { cn } from "../../../lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -12,14 +22,39 @@ import {
 } from "@/components/ui/table";
 
 import ClassFormSheet from "./ClassFormSheet";
-import { useCreateClassMutation, useGetClassesQuery } from "@/api/AdminApi";
+import {
+  useCreateClassMutation,
+  useDeleteClassMutation,
+  useGetClassesQuery,
+  type SchoolClass,
+} from "@/api/AdminApi";
 
 const headClass = "text-center text-xs font-semibold uppercase text-slate-500";
+const COLUMN_COUNT = 6;
 
 function ClassTableOverview() {
   const { data: classes = [], isLoading, isError } = useGetClassesQuery();
   const [createClass] = useCreateClassMutation();
+  const [deleteClass, { isLoading: isDeleting }] = useDeleteClassMutation();
+
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [classToDelete, setClassToDelete] = useState<SchoolClass | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function handleConfirmDelete() {
+    if (!classToDelete) return;
+    setDeleteError(null);
+    try {
+      await deleteClass(classToDelete.id).unwrap();
+      setClassToDelete(null);
+    } catch {
+      const name = classToDelete.name;
+      setClassToDelete(null);
+      setDeleteError(
+        `Could not delete "${name}". It may have active applications.`,
+      );
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -38,6 +73,12 @@ function ClassTableOverview() {
         </Button>
       </div>
 
+      {deleteError && (
+        <p className="text-sm text-red-600" role="alert">
+          {deleteError}
+        </p>
+      )}
+
       <div className="rounded-xl border bg-white shadow-sm">
         <Table>
           <TableHeader>
@@ -49,6 +90,7 @@ function ClassTableOverview() {
               <TableHead className={headClass}>Available Seats</TableHead>
               <TableHead className={headClass}>Held Seats</TableHead>
               <TableHead className={headClass}>Confirmed Seats</TableHead>
+              <TableHead className={cn(headClass, "px-6")}>Action</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -56,7 +98,7 @@ function ClassTableOverview() {
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={COLUMN_COUNT}
                   className="py-10 text-center text-sm text-slate-500"
                 >
                   Loading classes...
@@ -65,7 +107,7 @@ function ClassTableOverview() {
             ) : isError ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={COLUMN_COUNT}
                   className="py-10 text-center text-sm text-red-600"
                 >
                   Could not load classes. Check that the API is running.
@@ -74,7 +116,7 @@ function ClassTableOverview() {
             ) : classes.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={COLUMN_COUNT}
                   className="py-10 text-center text-sm text-slate-500"
                 >
                   No classes yet. Create your first class.
@@ -98,12 +140,55 @@ function ClassTableOverview() {
                   <TableCell className="text-center text-slate-600">
                     {c.confirmedSeats}
                   </TableCell>
+                  <TableCell className="px-6 text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                      aria-label={`Delete ${c.name}`}
+                      onClick={() => {
+                        setDeleteError(null);
+                        setClassToDelete(c);
+                      }}
+                    >
+                      <Trash2 size={16} strokeWidth={1.75} />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog
+        open={classToDelete !== null}
+        onOpenChange={(open) => {
+          // Don't allow closing mid-request
+          if (!open && !isDeleting) setClassToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this class?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {classToDelete
+                ? `"${classToDelete.name}" will be permanently removed. This cannot be undone.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Yes, delete"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ClassFormSheet
         open={sheetOpen}

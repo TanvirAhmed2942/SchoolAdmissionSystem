@@ -1,5 +1,7 @@
 import { baseApi } from "./BaseApi";
-
+const API_ORIGIN = String("http://localhost:8080")
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
 export type SchoolClass = {
   id: string;
   name: string;
@@ -40,6 +42,14 @@ export const adminApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `admin/classes/${id}`, method: "DELETE" }),
       invalidatesTags: ["Admin"],
     }),
+    deleteAllData: builder.mutation<string, void>({
+      query: () => ({
+        url: `${API_ORIGIN}/dev/clear-database`,
+        method: "POST",
+        responseHandler: "text",
+      }),
+      invalidatesTags: ["Admin", "Hold"],
+    }),
   }),
 });
 
@@ -47,4 +57,6 @@ export const {
   useGetClassesQuery,
   useGetClassByIdQuery,
   useCreateClassMutation,
+  useDeleteClassMutation,
+  useDeleteAllDataMutation,
 } = adminApi;
