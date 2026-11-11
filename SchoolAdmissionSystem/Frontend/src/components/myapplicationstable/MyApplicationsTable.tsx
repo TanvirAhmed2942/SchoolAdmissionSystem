@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router";
 
 import { cn } from "../../../lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -13,65 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  useGetMyApplicationsQuery,
-  type AdmissionHold,
-  type HoldStatus,
-} from "@/api/StudentApi";
+import { useGetMyApplicationsQuery } from "@/api/StudentApi";
+
+import { formatServerDate, getStatusBadge } from "./applicationStatus";
+import ViewApplicationModal from "./ViewApplicationModal";
 
 const STORAGE_KEY = "studentId";
 const STUDENT_ID_PATTERN = /^\d{17}$/;
-
-const statusStyles: Record<HoldStatus, { label: string; className: string }> = {
-  HELD: {
-    label: "HELD",
-    className: "border-amber-300 bg-amber-50 text-amber-700",
-  },
-  CONFIRMED: {
-    label: "CONFIRMED",
-    className: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  },
-  CANCELLED: {
-    label: "CANCELLED",
-    className: "border-red-200 bg-red-50 text-red-700",
-  },
-  EXPIRED: {
-    label: "EXPIRED",
-    className: "border-transparent bg-slate-100 text-slate-600",
-  },
-};
-
-// Shown for any status the UI doesn't recognise, instead of
-// silently pretending it's EXPIRED.
-const fallbackClassName = "border-slate-300 bg-white text-slate-500";
-
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: true,
-});
-
-// Server timestamps without a timezone are UTC.
-// Delete this once the API returns timestamps with a "Z".
-function parseServerDate(value: string) {
-  const hasZone = /(Z|[+-]\d{2}:?\d{2})$/.test(value);
-  return new Date(hasZone ? value : `${value}Z`);
-}
-
-// A HELD hold past its expiry is effectively expired, even if the
-// backend hasn't flipped the status yet.
-function getDisplayStatus(app: AdmissionHold): HoldStatus {
-  if (
-    app.status === "HELD" &&
-    parseServerDate(app.expiresAt).getTime() < Date.now()
-  ) {
-    return "EXPIRED";
-  }
-  return app.status;
-}
 
 const headClass = "text-xs font-semibold uppercase text-slate-500";
 
@@ -105,6 +52,7 @@ function MessageRow({
 function MyApplicationsTable() {
   const [input, setInput] = useState(readStoredId);
   const [studentId, setStudentId] = useState(readStoredId);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const isValid = STUDENT_ID_PATTERN.test(studentId);
 
@@ -118,15 +66,29 @@ function MyApplicationsTable() {
     refetchOnMountOrArgChange: true,
   });
 
+  // Get the selected application from the latest query data.
+  const selectedApplication =
+    applications.find((a) => a.id === selectedId) ?? null;
+
   function handleSearch(e: FormEvent) {
     e.preventDefault();
+
     if (!STUDENT_ID_PATTERN.test(input)) return;
+
     try {
       sessionStorage.setItem(STORAGE_KEY, input);
     } catch {
-      /* storage unavailable, ignore */
+      // Storage unavailable, ignore.
     }
+
+    setSelectedId(null);
     setStudentId(input);
+  }
+
+  function handleModalChange(open: boolean) {
+    if (!open) {
+      setSelectedId(null);
+    }
   }
 
   return (
@@ -143,6 +105,7 @@ function MyApplicationsTable() {
           maxLength={17}
           className="max-w-sm"
         />
+
         <Button
           type="submit"
           className="bg-indigo-600 hover:bg-indigo-700"
@@ -159,10 +122,15 @@ function MyApplicationsTable() {
               <TableHead className={cn(headClass, "px-6 py-4")}>
                 Application ID
               </TableHead>
+
               <TableHead className={headClass}>Class Name</TableHead>
+
               <TableHead className={headClass}>Created At</TableHead>
+
               <TableHead className={headClass}>Expires At</TableHead>
+
               <TableHead className={headClass}>Status</TableHead>
+
               <TableHead className={cn(headClass, "px-6 text-right")}>
                 Action
               </TableHead>
@@ -180,7 +148,11 @@ function MyApplicationsTable() {
             ) : isError ? (
               <MessageRow className="text-red-600">
                 Could not load applications.{" "}
-                <button className="underline" onClick={() => refetch()}>
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => refetch()}
+                >
                   Try again
                 </button>
               </MessageRow>
@@ -188,26 +160,26 @@ function MyApplicationsTable() {
               <MessageRow>You haven't made any applications yet.</MessageRow>
             ) : (
               applications.map((app) => {
-                const displayStatus = getDisplayStatus(app);
-                const status = statusStyles[displayStatus] ?? {
-                  label: String(displayStatus),
-                  className: fallbackClassName,
-                };
+                const status = getStatusBadge(app);
 
                 return (
                   <TableRow key={app.id}>
                     <TableCell className="px-6 py-4 font-mono text-xs font-semibold">
                       {app.id}
                     </TableCell>
+
                     <TableCell className="text-slate-700">
                       {app.className}
                     </TableCell>
+
                     <TableCell className="text-slate-600">
-                      {dateFormatter.format(parseServerDate(app.createdAt))}
+                      {formatServerDate(app.createdAt)}
                     </TableCell>
+
                     <TableCell className="text-slate-600">
-                      {dateFormatter.format(parseServerDate(app.expiresAt))}
+                      {formatServerDate(app.expiresAt)}
                     </TableCell>
+
                     <TableCell>
                       <Badge
                         variant="outline"
@@ -219,13 +191,15 @@ function MyApplicationsTable() {
                         {status.label}
                       </Badge>
                     </TableCell>
+
                     <TableCell className="px-6 text-right">
-                      <Link
-                        to={`/applications/${app.id}`}
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                      <Button
+                        variant="link"
+                        className="h-auto p-0 text-indigo-600 hover:text-indigo-800"
+                        onClick={() => setSelectedId(app.id)}
                       >
                         View Details
-                      </Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -234,6 +208,12 @@ function MyApplicationsTable() {
           </TableBody>
         </Table>
       </div>
+
+      <ViewApplicationModal
+        application={selectedApplication}
+        open={selectedId !== null}
+        onOpenChange={handleModalChange}
+      />
     </div>
   );
 }
