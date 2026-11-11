@@ -5,6 +5,7 @@ using SchoolAdmissionSystem.Application.Options;
 using SchoolAdmissionSystem.Infrastructure;
 using SchoolAdmissionSystem.Infrastructure.BackgroundServices;
 using SchoolAdmissionSystem.Infrastructure.Persistence;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<DatabaseDataCleaner>();
@@ -54,6 +55,9 @@ builder.Services.AddHostedService<HoldExpiryWorker>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 //CORS
 builder.Services.AddCors(options =>

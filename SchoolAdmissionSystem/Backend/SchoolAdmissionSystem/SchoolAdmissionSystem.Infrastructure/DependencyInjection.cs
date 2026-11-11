@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SchoolAdmissionSystem.Application.Interfaces;
+using SchoolAdmissionSystem.Infrastructure.BackgroundServices;
 using SchoolAdmissionSystem.Infrastructure.Persistence;
 using SchoolAdmissionSystem.Infrastructure.Repositories;
 
@@ -15,7 +16,8 @@ namespace SchoolAdmissionSystem.Infrastructure
             // Switch to scoped when they are backed by a real database (e.g. EF Core DbContext).
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<ICandidateRepository, CandidateRepository>();
-            //services.AddHostedService<HoldExpiryWorker>();
+            services.AddScoped<IMyApplicationRepository, MyApplicationRepository>();
+            services.AddHostedService<HoldExpiryWorker>();
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 

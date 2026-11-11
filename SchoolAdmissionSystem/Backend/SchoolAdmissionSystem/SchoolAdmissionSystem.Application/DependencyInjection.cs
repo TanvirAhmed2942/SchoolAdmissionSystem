@@ -12,6 +12,7 @@ namespace SchoolAdmissionSystem.Application
             // Switch to scoped when they are backed by a real database (e.g. EF Core DbContext).
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<ICandidateService, CandidateService>();
+            services.AddScoped<IMyApplicationService, MyApplicationService>();
 
 
             return services;
