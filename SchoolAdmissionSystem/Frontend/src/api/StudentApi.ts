@@ -1,7 +1,5 @@
 import { baseApi } from "./BaseApi";
 
-export type HoldStatus = "HELD" | "CONFIRMED" | "CANCELLED" | "EXPIRED";
-
 export type AdmissionHold = {
   id: string;
   classId: string;
@@ -15,11 +13,12 @@ export type AdmissionHold = {
 };
 
 export const AdmissionStatusCode = {
-  HELD: 0,
-  CONFIRMED: 1,
-  CANCELLED: 2,
+  HELD: 1,
+  CONFIRMED: 2,
   EXPIRED: 3,
+  CANCELLED: 4,
 } as const;
+export type HoldStatus = keyof typeof AdmissionStatusCode;
 
 export const studentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -61,6 +60,14 @@ export const studentApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Admin"],
     }),
+
+    getMyApplications: builder.query<AdmissionHold[], string>({
+      query: (studentId) => ({
+        url: "/me/holds",
+        headers: { "X-Student-Id": studentId },
+      }),
+      providesTags: ["Hold", "Admin"],
+    }),
   }),
 });
 
@@ -68,4 +75,5 @@ export const {
   useCreateHoldMutation,
   useConfirmHoldMutation,
   useCancelHoldMutation,
+  useGetMyApplicationsQuery,
 } = studentApi;
