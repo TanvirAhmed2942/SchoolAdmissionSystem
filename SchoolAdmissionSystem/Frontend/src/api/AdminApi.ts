@@ -35,6 +35,11 @@ export const adminApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Admin"], // refetches getClasses
     }),
+
+    deleteClass: builder.mutation<void, string>({
+      query: (id) => ({ url: `admin/classes/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Admin"],
+    }),
   }),
 });
 

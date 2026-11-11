@@ -4,7 +4,6 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowLeft } from "lucide-react";
-import { classes } from "../../../data/data";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -14,7 +13,10 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+
+import { useCreateHoldMutation, type AdmissionHold } from "@/api/StudentApi";
 import ReservationStatus from "./ReservationHeld";
+import { useGetClassesQuery } from "@/api/AdminApi";
 
 const formSchema = z.object({
   birthRegistrationNumber: z
@@ -25,14 +27,19 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 type Reservation = {
-  applicationId: string;
-  studentId: string;
+  hold: AdmissionHold;
+  studentId: string; // masked, for display only
+  rawStudentId: string; // full value, needed for confirm / cancel calls
 };
 
 function ReservationForm() {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const selectedClass = classes.find((c) => c.id === Number(id));
+  const { id } = useParams<{ id: string }>();
+
+  const { data: classes = [], isLoading, isError } = useGetClassesQuery();
+  const selectedClass = classes.find((c) => c.id === id);
+
+  const [createHold, { isLoading: creating }] = useCreateHoldMutation();
   const [reservation, setReservation] = useState<Reservation | null>(null);
 
   const form = useForm<FormValues>({
@@ -41,33 +48,56 @@ function ReservationForm() {
     mode: "onChange",
   });
 
+  // Wait for the data, otherwise the redirect below fires before the class loads
+  if (isLoading) return <p className="p-6 text-slate-500">Loading...</p>;
+  if (isError)
+    return (
+      <p className="p-6 text-red-600">
+        Could not load the class. Check that the API is running.
+      </p>
+    );
+
   // After reserving, show the status page instead of the form.
-  // This must come before the redirect below, otherwise a seat count that
-  // drops to 0 after reserving would bounce the user back to "/".
+  // Must come before the redirect so a seat count that drops to 0 after
+  // reserving doesn't bounce the user back to "/".
   if (reservation && selectedClass) {
     return (
       <ReservationStatus
-        applicationId={reservation.applicationId}
+        applicationId={reservation.hold.id}
         classTitle={selectedClass.name}
         studentId={reservation.studentId}
+        holdId={reservation.hold.id}
+        rawStudentId={reservation.rawStudentId}
+        expiresAt={reservation.hold.expiresAt}
       />
     );
   }
 
   // Bad URL or full class: send them back
-  if (!selectedClass || selectedClass.available === 0) {
+  if (!selectedClass || selectedClass.availableSeats <= 0) {
     return <Navigate to="/" replace />;
   }
 
-  function onSubmit(values: FormValues) {
+  async function onSubmit(values: FormValues) {
     const n = values.birthRegistrationNumber;
 
-    // TODO: call your API with { classId: Number(id), ...values }
-    // and use the applicationId / expiry it returns
-    setReservation({
-      applicationId: `APP-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      studentId: `${n.slice(0, 4)} •••• •••• ${n.slice(-4)}`,
-    });
+    try {
+      const hold = await createHold({
+        classId: selectedClass!.id,
+        studentId: n,
+      }).unwrap();
+
+      setReservation({
+        hold,
+        studentId: `${n.slice(0, 4)} •••• •••• ${n.slice(-4)}`,
+        rawStudentId: n,
+      });
+    } catch (err) {
+      const message =
+        (err as { data?: { error?: string } })?.data?.error ??
+        "Could not reserve the seat. Please try again.";
+      form.setError("birthRegistrationNumber", { type: "server", message });
+    }
   }
 
   return (
@@ -98,7 +128,7 @@ function ReservationForm() {
               <p className="text-lg font-semibold">{selectedClass.name}</p>
             </div>
             <p className="text-sm text-indigo-600">
-              {selectedClass.available} seats available
+              {selectedClass.availableSeats} seats available
             </p>
           </div>
 
@@ -154,9 +184,9 @@ function ReservationForm() {
                 <Button
                   type="submit"
                   className="bg-indigo-600 hover:bg-indigo-700"
-                  disabled={!form.formState.isValid}
+                  disabled={!form.formState.isValid || creating}
                 >
-                  Reserve Seat
+                  {creating ? "Reserving..." : "Reserve Seat"}
                 </Button>
               </Field>
             </FieldGroup>

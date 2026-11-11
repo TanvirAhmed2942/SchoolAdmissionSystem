@@ -6,11 +6,11 @@ import { cn } from "../../../lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  useCancelHoldMutation,
+  useConfirmHoldMutation,
+} from "@/api/StudentApi";
 import ConfirmAdmissionModal from "./ConfirmAdmissionModal";
-
-// Change this to adjust the timer (in seconds). 10 * 2 = 20s for testing.
-// Set it to 10 * 60 for a real 10 minute hold.
-const RESERVATION_DURATION_SECONDS = 10 * 2;
 
 type Status = "held" | "confirmed" | "cancelled" | "expired";
 
@@ -87,6 +87,16 @@ const expirationFormatter = new Intl.DateTimeFormat("en-GB", {
   hour12: true,
 });
 
+// If the server sends a timestamp without a timezone, treat it as UTC
+function parseServerDate(value: string) {
+  const hasZone = /(Z|[+-]\d{2}:?\d{2})$/.test(value);
+  return new Date(hasZone ? value : `${value}Z`).getTime();
+}
+
+const errorMessage = (err: unknown) =>
+  (err as { data?: { error?: string } })?.data?.error ??
+  "Something went wrong. Please try again.";
+
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
@@ -101,23 +111,31 @@ function Detail({ label, value }: { label: string; value: string }) {
 type ReservationStatusProps = {
   applicationId: string;
   classTitle: string;
-  studentId: string;
-  durationSeconds?: number;
+  studentId: string; // masked, display only
+  holdId: string;
+  rawStudentId: string; // sent to the API as X-Student-Id
+  expiresAt: string; // ISO string from the server
 };
 
 function ReservationStatus({
   applicationId,
   classTitle,
   studentId,
-  durationSeconds = RESERVATION_DURATION_SECONDS,
+  holdId,
+  rawStudentId,
+  expiresAt: expiresAtIso,
 }: ReservationStatusProps) {
-  const [expiresAt] = useState(() => Date.now() + durationSeconds * 1000);
+  const expiresAt = parseServerDate(expiresAtIso);
+
+  const [confirmHold, { isLoading: confirming }] = useConfirmHoldMutation();
+  const [cancelHold, { isLoading: cancelling }] = useCancelHoldMutation();
+
   const [now, setNow] = useState(() => Date.now());
   const [cancelled, setCancelled] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Everything below is derived, so there's no extra state to keep in sync
   const secondsLeft = Math.max(0, Math.ceil((expiresAt - now) / 1000));
   const status: Status = confirmed
     ? "confirmed"
@@ -127,24 +145,35 @@ function ReservationStatus({
         ? "expired"
         : "held";
   const isHeld = status === "held";
+  const busy = confirming || cancelling;
   const config = statusConfig[status];
 
-  // Only tick while the reservation is held
   useEffect(() => {
     if (!isHeld) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [isHeld]);
 
-  function handleConfirm() {
-    // TODO: call your confirm API here
-    setConfirmed(true);
-    setConfirmOpen(false);
+  async function handleConfirm() {
+    setError(null);
+    try {
+      await confirmHold({ holdId, studentId: rawStudentId }).unwrap();
+      setConfirmed(true);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setConfirmOpen(false);
+    }
   }
 
-  function handleCancel() {
-    // TODO: call your cancel API here
-    setCancelled(true);
+  async function handleCancel() {
+    setError(null);
+    try {
+      await cancelHold({ holdId, studentId: rawStudentId }).unwrap();
+      setCancelled(true);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   return (
@@ -154,7 +183,7 @@ function ReservationStatus({
         className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
       >
         <ArrowLeft className="size-4" />
-        Back to my applications
+        Back to available classes
       </Link>
 
       <Card className="gap-0 overflow-hidden py-0">
@@ -217,27 +246,34 @@ function ReservationStatus({
           />
         </div>
 
+        {error && (
+          <p className="mx-6 mb-2 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        )}
+
         <div className="mx-6 border-t" />
 
         <div className="flex justify-end gap-3 p-6">
           {isHeld && (
-            <Button variant="outline" onClick={handleCancel}>
-              Cancel Reservation
+            <Button variant="outline" disabled={busy} onClick={handleCancel}>
+              {cancelling ? "Cancelling..." : "Cancel Reservation"}
             </Button>
           )}
           <Button
             className="bg-indigo-600 hover:bg-indigo-700"
-            disabled={!isHeld}
+            disabled={!isHeld || busy}
             onClick={() => setConfirmOpen(true)}
           >
             {status === "confirmed"
               ? "Admission Confirmed"
-              : "Confirm Admission"}
+              : confirming
+                ? "Confirming..."
+                : "Confirm Admission"}
           </Button>
         </div>
       </Card>
 
-      {/* Closes automatically if the timer runs out while it's open */}
       <ConfirmAdmissionModal
         open={confirmOpen && isHeld}
         onOpenChange={setConfirmOpen}
