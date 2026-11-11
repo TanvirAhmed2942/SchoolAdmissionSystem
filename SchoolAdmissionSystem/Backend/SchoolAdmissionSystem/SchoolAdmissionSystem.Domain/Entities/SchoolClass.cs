@@ -11,6 +11,7 @@
         public int TotalSeats { get; set; }
 
         public DateTime CreatedAt { get; set; }
+        public DateTime ModifiedAt { get; set; }
 
         public ICollection<AdmissionHold> Holds { get; set; }
             = new List<AdmissionHold>();
