@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
+using SchoolAdmissionSystem.Application.Extensions;
 using SchoolAdmissionSystem.Application.Interfaces;
 using SchoolAdmissionSystem.Domain.Enums;
 
@@ -29,6 +30,10 @@ namespace SchoolAdmissionSystem.Api.Controllers.CandidateController
             [FromRoute] Guid classId,
             [FromHeader(Name = "X-Student-Id")] string studentId)
         {
+            if (!studentId.IsValidStudentId())
+            {
+                return BadRequest("Invalid student ID format. It must be a 17-digit number.");
+            }
             var result = await _candidateService.CreateHoldAsync(classId, studentId);
 
             if (result == null)
@@ -43,6 +48,10 @@ namespace SchoolAdmissionSystem.Api.Controllers.CandidateController
             [FromRoute] Guid holdId,
             [FromHeader(Name = "X-Student-Id")] string studentId)
         {
+            if (!studentId.IsValidStudentId())
+            {
+                return BadRequest("Invalid student ID format. It must be a 17-digit number.");
+            }
             var result = await _candidateService.GetHoldByIdAsync(holdId, studentId);
 
             if (result == null)
@@ -58,6 +67,10 @@ namespace SchoolAdmissionSystem.Api.Controllers.CandidateController
             [FromQuery] AdmissionStatus status,
             [FromHeader(Name = "X-Student-Id")] string studentId)
         {
+            if (!studentId.IsValidStudentId())
+            {
+                return BadRequest("Invalid student ID format. It must be a 17-digit number.");
+            }
             var result = await _candidateService.CancelHoldAsync(
                 holdId,
                 studentId,

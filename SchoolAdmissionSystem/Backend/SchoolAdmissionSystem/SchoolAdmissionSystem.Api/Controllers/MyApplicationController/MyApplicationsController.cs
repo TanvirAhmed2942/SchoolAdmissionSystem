@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SchoolAdmissionSystem.Application.Extensions;
 using SchoolAdmissionSystem.Application.Interfaces;
 
 namespace SchoolAdmissionSystem.Api.Controllers.MyApplicationController
@@ -19,6 +20,10 @@ namespace SchoolAdmissionSystem.Api.Controllers.MyApplicationController
         [HttpGet("holds")]
         public async Task<IActionResult> GetMyApplications([FromHeader(Name = "X-Student-Id")] string studentId)
         {
+            if (!studentId.IsValidStudentId())
+            {
+                return BadRequest("Invalid student ID format. It must be a 17-digit number.");
+            }
             _logger.LogInformation("Retrieving my applications for student: {StudentId}", studentId);
             var myApplications = await _myApplicationService.GetMyApplicationsAsync(studentId);
 
