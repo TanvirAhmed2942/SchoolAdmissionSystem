@@ -7,6 +7,7 @@ using SchoolAdmissionSystem.Infrastructure.BackgroundServices;
 using SchoolAdmissionSystem.Infrastructure.Persistence;
 using System.Text.Json.Serialization;
 
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<DatabaseDataCleaner>();
 
@@ -89,13 +90,12 @@ if (app.Environment.IsDevelopment())
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapPost("/dev/clear-database", async (
-        DatabaseDataCleaner cleaner) =>
+    app.MapPost("/dev/clear-database", async (DatabaseDataCleaner cleaner) =>
     {
         await cleaner.ClearAllDataAsync();
-
         return Results.Ok("Database data cleared successfully.");
-    });
+    })
+    .RequireCors("Frontend");
 }
 
 if (app.Environment.IsDevelopment())
@@ -104,6 +104,15 @@ if (app.Environment.IsDevelopment())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
 }
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+
+    await dbContext.Database.MigrateAsync();
+}
+
 
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
@@ -115,3 +124,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+public partial class Program { }

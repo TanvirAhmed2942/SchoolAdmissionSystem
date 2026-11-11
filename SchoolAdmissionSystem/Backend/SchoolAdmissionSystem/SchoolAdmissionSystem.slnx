@@ -3,4 +3,5 @@
   <Project Path="SchoolAdmissionSystem.Application/SchoolAdmissionSystem.Application.csproj" />
   <Project Path="SchoolAdmissionSystem.Domain/SchoolAdmissionSystem.Domain.csproj" />
   <Project Path="SchoolAdmissionSystem.Infrastructure/SchoolAdmissionSystem.Infrastructure.csproj" />
+  <Project Path="SchoolAdmissionSystem.Tests/SchoolAdmissionSystem.Tests.csproj" />
 </Solution>
