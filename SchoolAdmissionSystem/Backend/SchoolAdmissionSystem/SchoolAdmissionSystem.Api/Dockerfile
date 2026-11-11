@@ -1,38 +1,30 @@
-
-# Base stage
+# Runtime base
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER $APP_UID
 WORKDIR /app
-
 EXPOSE 8080
-EXPOSE 8081
 
-# Build stage
+# Build
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
+# Copy every project file first so the restore layer is cached
 COPY ["SchoolAdmissionSystem.Api/SchoolAdmissionSystem.Api.csproj", "SchoolAdmissionSystem.Api/"]
-RUN dotnet restore "./SchoolAdmissionSystem.Api/SchoolAdmissionSystem.Api.csproj"
+COPY ["SchoolAdmissionSystem.Application/SchoolAdmissionSystem.Application.csproj", "SchoolAdmissionSystem.Application/"]
+COPY ["SchoolAdmissionSystem.Domain/SchoolAdmissionSystem.Domain.csproj", "SchoolAdmissionSystem.Domain/"]
+COPY ["SchoolAdmissionSystem.Infrastructure/SchoolAdmissionSystem.Infrastructure.csproj", "SchoolAdmissionSystem.Infrastructure/"]
+RUN dotnet restore "SchoolAdmissionSystem.Api/SchoolAdmissionSystem.Api.csproj"
 
+# Copy the rest of the source
 COPY . .
-WORKDIR "/src/SchoolAdmissionSystem.Api"
 
-RUN dotnet build "./SchoolAdmissionSystem.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
+# Publish (this builds too, so a separate "dotnet build" step is unnecessary)
+RUN dotnet publish "SchoolAdmissionSystem.Api/SchoolAdmissionSystem.Api.csproj" \
+    -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
 
-# Publish stage
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-
-RUN dotnet publish "./SchoolAdmissionSystem.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-# Development runtime stage
+# Final image
 FROM base AS final
-
-ENV ASPNETCORE_ENVIRONMENT=Development
-ENV ASPNETCORE_HTTP_PORTS=8080
-
 WORKDIR /app
-COPY --from=publish /app/publish .
-
+COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "SchoolAdmissionSystem.Api.dll"]

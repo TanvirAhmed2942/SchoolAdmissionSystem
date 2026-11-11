@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SchoolAdmissionSystem.Api.Middleware;
 using SchoolAdmissionSystem.Application;
 using SchoolAdmissionSystem.Application.Options;
@@ -11,6 +12,8 @@ builder.Services.AddScoped<DatabaseDataCleaner>();
 builder.Services.Configure<AdmissionHoldOptions>(
     builder.Configuration.GetSection(AdmissionHoldOptions.SectionName));
 builder.Services.AddHostedService<HoldExpiryWorker>();
+
+
 
 //var connectionString =
 //    builder.Configuration.GetConnectionString("DefaultConnection");
@@ -52,6 +55,17 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 
+//CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy => policy
+        .WithOrigins(
+            "http://192.168.68.61:5173",
+            "http://localhost:5173")   // keep only the port your frontend really uses
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -80,11 +94,19 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+}
 
-app.UseAuthorization();
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 
+app.UseCors("Frontend");
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseAuthorization();
 
 app.MapControllers();
 
