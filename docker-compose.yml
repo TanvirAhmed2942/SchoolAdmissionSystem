@@ -1,0 +1,49 @@
+services:
+  school-postgres:
+    image: postgres:17
+    container_name: school-postgres
+    environment:
+      POSTGRES_DB: SchoolAdmissionDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-OnnoRokomProjukti#123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - school-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d SchoolAdmissionDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  school-api:
+    build:
+      context: ./SchoolAdmissionSystem/Backend/SchoolAdmissionSystem
+      dockerfile: SchoolAdmissionSystem.Api/Dockerfile
+    container_name: school-api
+    depends_on:
+      school-postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=school-postgres;Port=5432;Database=SchoolAdmissionDb;Username=postgres;Password=${POSTGRES_PASSWORD:-OnnoRokomProjukti#123}"
+    ports:
+      - "8080:8080"
+
+  school-frontend:
+    build:
+      context: ./SchoolAdmissionSystem/Frontend
+    container_name: school-frontend
+    depends_on:
+      - school-api
+    environment:
+      VITE_API_URL: http://localhost:8080
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./SchoolAdmissionSystem/Frontend:/app
+      - /app/node_modules
+
+volumes:
+  school-pgdata:
