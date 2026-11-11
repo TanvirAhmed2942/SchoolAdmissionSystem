@@ -1,42 +1,51 @@
+using SchoolAdmissionSystem.Api.Middleware;
 using SchoolAdmissionSystem.Application;
+using SchoolAdmissionSystem.Application.Options;
 using SchoolAdmissionSystem.Infrastructure;
+using SchoolAdmissionSystem.Infrastructure.BackgroundServices;
+using SchoolAdmissionSystem.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<DatabaseDataCleaner>();
 
-var connectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.Configure<AdmissionHoldOptions>(
+    builder.Configuration.GetSection(AdmissionHoldOptions.SectionName));
+builder.Services.AddHostedService<HoldExpiryWorker>();
 
-var dbSettings =
-    new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+//var connectionString =
+//    builder.Configuration.GetConnectionString("DefaultConnection");
 
-Console.WriteLine($"Connection string exists: {!string.IsNullOrWhiteSpace(connectionString)}");
+//var dbSettings =
+//    new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
 
-Console.WriteLine($"Configuration key exists: {builder.Configuration["ConnectionStrings:DefaultConnection"] != null}");
-Console.WriteLine($"Operating System: {Environment.OSVersion}");
-Console.WriteLine($"Is Linux: {OperatingSystem.IsLinux()}");
-Console.WriteLine($"Is Windows: {OperatingSystem.IsWindows()}");
+//Console.WriteLine($"Connection string exists: {!string.IsNullOrWhiteSpace(connectionString)}");
 
-Console.WriteLine(
-    $"Running in Docker: {Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")}"
-);
-try
-{
-    await using var connection =
-        new Npgsql.NpgsqlConnection(connectionString);
+//Console.WriteLine($"Configuration key exists: {builder.Configuration["ConnectionStrings:DefaultConnection"] != null}");
+//Console.WriteLine($"Operating System: {Environment.OSVersion}");
+//Console.WriteLine($"Is Linux: {OperatingSystem.IsLinux()}");
+//Console.WriteLine($"Is Windows: {OperatingSystem.IsWindows()}");
 
-    await connection.OpenAsync();
+//Console.WriteLine(
+//    $"Running in Docker: {Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")}"
+//);
+//try
+//{
+//    await using var connection =
+//        new Npgsql.NpgsqlConnection(connectionString);
 
-    Console.WriteLine("PostgreSQL connection successful!");
-}
-catch (Exception ex)
-{
-    Console.WriteLine(ex.ToString());
-}
+//    await connection.OpenAsync();
 
-Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
-Console.WriteLine($"Database Host: {dbSettings.Host}");
-Console.WriteLine($"Database Port: {dbSettings.Port}");
-Console.WriteLine($"Database Name: {dbSettings.Database}");
+//    Console.WriteLine("PostgreSQL connection successful!");
+//}
+//catch (Exception ex)
+//{
+//    Console.WriteLine(ex.ToString());
+//}
+
+//Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+//Console.WriteLine($"Database Host: {dbSettings.Host}");
+//Console.WriteLine($"Database Port: {dbSettings.Port}");
+//Console.WriteLine($"Database Name: {dbSettings.Database}");
 
 // Add services to the container.
 builder.Services.AddApplication();
@@ -47,7 +56,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-
+builder.Services.AddEndpointsApiExplorer();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -60,9 +69,22 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+if (app.Environment.IsDevelopment())
+{
+    app.MapPost("/dev/clear-database", async (
+        DatabaseDataCleaner cleaner) =>
+    {
+        await cleaner.ClearAllDataAsync();
+
+        return Results.Ok("Database data cleared successfully.");
+    });
+}
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapControllers();
 

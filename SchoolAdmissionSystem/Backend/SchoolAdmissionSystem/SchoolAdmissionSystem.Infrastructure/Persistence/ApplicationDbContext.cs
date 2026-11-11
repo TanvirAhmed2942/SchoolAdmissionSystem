@@ -11,6 +11,8 @@ namespace SchoolAdmissionSystem.Infrastructure.Persistence
         }
         public DbSet<SchoolClass> SchoolClasses => Set<SchoolClass>();
 
+        public DbSet<AdmissionHold> AdmissionHold => Set<AdmissionHold>();
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -18,6 +20,18 @@ namespace SchoolAdmissionSystem.Infrastructure.Persistence
 
             modelBuilder.ApplyConfigurationsFromAssembly(
                 typeof(ApplicationDbContext).Assembly);
+
+
+            modelBuilder.Entity<AdmissionHold>(entity =>
+            {
+                entity.Property(h => h.Version).IsRowVersion();
+
+                entity.HasOne(h => h.Class)
+                      .WithMany(c => c.Holds)
+                      .HasForeignKey(h => h.ClassId);
+            });
         }
+
+
     }
 }

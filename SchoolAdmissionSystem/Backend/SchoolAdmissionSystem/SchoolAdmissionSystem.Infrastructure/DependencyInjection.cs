@@ -14,6 +14,8 @@ namespace SchoolAdmissionSystem.Infrastructure
             // Singletons because the repositories keep their data in memory.
             // Switch to scoped when they are backed by a real database (e.g. EF Core DbContext).
             services.AddScoped<IAdminRepository, AdminRepository>();
+            services.AddScoped<ICandidateRepository, CandidateRepository>();
+            //services.AddHostedService<HoldExpiryWorker>();
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 

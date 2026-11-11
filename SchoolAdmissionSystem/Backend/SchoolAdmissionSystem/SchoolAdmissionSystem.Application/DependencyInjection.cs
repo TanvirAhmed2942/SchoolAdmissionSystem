@@ -11,6 +11,7 @@ namespace SchoolAdmissionSystem.Application
             // Singletons because the repositories keep their data in memory.
             // Switch to scoped when they are backed by a real database (e.g. EF Core DbContext).
             services.AddScoped<IAdminService, AdminService>();
+            services.AddScoped<ICandidateService, CandidateService>();
 
 
             return services;
