@@ -10,31 +10,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { classes, type ClassSeat } from "../../../data/data";
-import ClassFormSheet, { type NewClass } from "./ClassFormSheet";
+
+import ClassFormSheet from "./ClassFormSheet";
+import { useCreateClassMutation, useGetClassesQuery } from "@/api/AdminApi";
 
 const headClass = "text-center text-xs font-semibold uppercase text-slate-500";
 
 function ClassTableOverview() {
-  // Local state for now. Replace with your API / query data.
-  const [classList, setClassList] = useState<ClassSeat[]>(classes);
+  const { data: classes = [], isLoading, isError } = useGetClassesQuery();
+  const [createClass] = useCreateClassMutation();
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  function handleCreate(values: NewClass) {
-    // TODO: call your create-class API here
-    setClassList((prev) => [
-      ...prev,
-      {
-        id: Math.max(0, ...prev.map((c) => c.id)) + 1,
-        name: values.name,
-        totalSeats: values.totalSeats,
-        available: values.totalSeats,
-        held: 0,
-        confirmed: 0,
-        shift: values.shift,
-      },
-    ]);
-  }
 
   return (
     <div className="space-y-6">
@@ -68,7 +53,25 @@ function ClassTableOverview() {
           </TableHeader>
 
           <TableBody>
-            {classList.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="py-10 text-center text-sm text-slate-500"
+                >
+                  Loading classes...
+                </TableCell>
+              </TableRow>
+            ) : isError ? (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="py-10 text-center text-sm text-red-600"
+                >
+                  Could not load classes. Check that the API is running.
+                </TableCell>
+              </TableRow>
+            ) : classes.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={5}
@@ -78,7 +81,7 @@ function ClassTableOverview() {
                 </TableCell>
               </TableRow>
             ) : (
-              classList.map((c) => (
+              classes.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell className="px-6 py-5 font-semibold">
                     {c.name}
@@ -87,13 +90,13 @@ function ClassTableOverview() {
                     {c.totalSeats}
                   </TableCell>
                   <TableCell className="text-center font-bold text-emerald-700">
-                    {c.available}
+                    {c.availableSeats}
                   </TableCell>
                   <TableCell className="text-center text-slate-600">
-                    {c.held}
+                    {c.heldSeats}
                   </TableCell>
                   <TableCell className="text-center text-slate-600">
-                    {c.confirmed}
+                    {c.confirmedSeats}
                   </TableCell>
                 </TableRow>
               ))
@@ -105,8 +108,10 @@ function ClassTableOverview() {
       <ClassFormSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        onCreate={handleCreate}
-        existingNames={classList.map((c) => c.name)}
+        existingNames={classes.map((c) => c.name)}
+        onCreate={async (values) => {
+          await createClass(values).unwrap();
+        }}
       />
     </div>
   );

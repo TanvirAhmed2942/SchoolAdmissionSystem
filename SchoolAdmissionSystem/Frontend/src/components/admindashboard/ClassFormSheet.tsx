@@ -24,17 +24,19 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { Shift } from "../../../data/data";
+
+type Shift = "morning" | "day";
 
 const MAX_SEATS = 500;
+// "Class Name" + " - Morning" must fit the backend limit (100 chars)
+const MAX_NAME = 50;
 
 const formSchema = z.object({
   name: z
     .string()
     .trim()
     .min(2, "Class name must be at least 2 characters.")
-    .max(50, "Class name must be at most 50 characters."),
-  // Kept as a string in the form and converted to a number on submit
+    .max(MAX_NAME, `Class name must be at most ${MAX_NAME} characters.`),
   totalSeats: z
     .string()
     .min(1, "Total seat capacity is required.")
@@ -51,10 +53,10 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Payload sent to the API: name is already "ClassName - Shift"
 export type NewClass = {
   name: string;
   totalSeats: number;
-  shift: Shift;
 };
 
 const shifts: { value: Shift; title: string; description: string }[] = [
@@ -62,10 +64,15 @@ const shifts: { value: Shift; title: string; description: string }[] = [
   { value: "day", title: "Day", description: "Day session" },
 ];
 
+const buildClassName = (name: string, shift: Shift) => {
+  const title = shifts.find((s) => s.value === shift)?.title ?? shift;
+  return `${name.trim()} - ${title}`;
+};
+
 type ClassFormSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (values: NewClass) => void;
+  onCreate: (values: NewClass) => Promise<void>;
   existingNames: string[];
 };
 
@@ -82,29 +89,33 @@ function ClassFormSheet({
   });
 
   function handleOpenChange(next: boolean) {
-    // The sheet component stays mounted, so clear the form when it closes
     if (!next) form.reset();
     onOpenChange(next);
   }
 
-  function onSubmit(values: FormValues) {
+  async function onSubmit(values: FormValues) {
+    const fullName = buildClassName(values.name, values.shift);
+
     const duplicate = existingNames.some(
-      (n) => n.trim().toLowerCase() === values.name.toLowerCase(),
+      (n) => n.trim().toLowerCase() === fullName.toLowerCase(),
     );
     if (duplicate) {
       form.setError("name", {
         type: "validate",
-        message: "A class with this name already exists.",
+        message: "This class already exists for the selected shift.",
       });
       return;
     }
 
-    onCreate({
-      name: values.name,
-      totalSeats: Number(values.totalSeats),
-      shift: values.shift,
-    });
-    handleOpenChange(false);
+    try {
+      await onCreate({ name: fullName, totalSeats: Number(values.totalSeats) });
+      handleOpenChange(false);
+    } catch (err) {
+      const message =
+        (err as { data?: { error?: string } })?.data?.error ??
+        "Could not create the class. Please try again.";
+      form.setError("name", { type: "server", message });
+    }
   }
 
   return (
@@ -135,7 +146,7 @@ function ClassFormSheet({
                       aria-invalid={fieldState.invalid}
                       placeholder="e.g. Class Five"
                       autoComplete="off"
-                      maxLength={50}
+                      maxLength={MAX_NAME}
                     />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
@@ -222,13 +233,13 @@ function ClassFormSheet({
           >
             Cancel
           </Button>
-          {/* Outside the <form>, so it's linked with the form attribute */}
           <Button
             type="submit"
             form="create-class-form"
+            disabled={form.formState.isSubmitting}
             className="bg-indigo-600 hover:bg-indigo-700"
           >
-            Create Class
+            {form.formState.isSubmitting ? "Creating..." : "Create Class"}
           </Button>
         </SheetFooter>
       </SheetContent>

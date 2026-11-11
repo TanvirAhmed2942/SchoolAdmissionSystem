@@ -1,17 +1,45 @@
 import { baseApi } from "./BaseApi";
 
+export type SchoolClass = {
+  id: string;
+  name: string;
+  totalSeats: number;
+  availableSeats: number;
+  heldSeats: number;
+  confirmedSeats: number;
+};
+
+export type CreateClassRequest = {
+  name: string; // "Class Five - Morning"
+  totalSeats: number;
+};
+
 export const adminApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getClasses: builder.query({
+    getClasses: builder.query<SchoolClass[], void>({
       query: () => "admin/classes",
       providesTags: ["Admin"],
     }),
 
-    getClassById: builder.query({
+    // A GET should be a query, not a mutation
+    getClassById: builder.query<SchoolClass, string>({
       query: (id) => `admin/classes/${id}`,
-      providesTags: (result, error, id) => [{ type: "Admin", id }],
+      providesTags: (_result, _error, id) => [{ type: "Admin", id }],
+    }),
+
+    createClass: builder.mutation<SchoolClass, CreateClassRequest>({
+      query: (body) => ({
+        url: "admin/classes",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Admin"], // refetches getClasses
     }),
   }),
 });
 
-export const { useGetClassesQuery, useGetClassByIdQuery } = adminApi;
+export const {
+  useGetClassesQuery,
+  useGetClassByIdQuery,
+  useCreateClassMutation,
+} = adminApi;
